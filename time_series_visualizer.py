@@ -9,9 +9,9 @@ df = pd.read_csv('fcc-forum-pageviews.csv', index_col="date" , parse_dates=True)
 
 # Clean data
 months= ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-flt_top25= df['value'] >= df['value'].quantile(0.975)
-flt_bot25= df['value'] <= df['value'].quantile(0.025)
-df_clean = df.loc[(~flt_top25 & ~flt_bot25)]
+flt_top25= df['value'] <= df['value'].quantile(0.975)
+flt_bot25= df['value'] >= df['value'].quantile(0.025)
+df_clean = df.loc[(flt_bot25 & flt_top25 )]
 
 
 def draw_line_plot():
@@ -30,10 +30,11 @@ def draw_line_plot():
 
 def draw_bar_plot():
     # Copy and modify data for monthly bar plot
-    df_bar= df.copy()
+    df_bar= df_clean.copy()
     df_bar.reset_index(inplace=True)
-    df_bar["year"] = df.index.year.values
-    df_bar["month"] = df.index.month_name()
+    df_bar["year"] = df_clean.index.year.values
+    df_bar["month"] = df_clean.index.month_name()
+    df_bar = pd.DataFrame(df_bar.groupby(["year", "month"], sort=False)["value"].mean().round().astype(int))
 
     # Draw bar plot
     fig, ax = plt.subplots(figsize=(15,5))
@@ -46,10 +47,10 @@ def draw_bar_plot():
 
 def draw_box_plot():
     # Prepare data for box plots (this part is done!)
-    df_box = df.copy()
+    df_box = df_clean.copy()
     df_box.reset_index(inplace=True)
-    df_box['year'] = [d.year for d in df_box.date]
-    df_box['month'] = [d.strftime('%b') for d in df_box.date]
+    df_box["year"] = df_clean.index.year.values
+    df_box["month"] = df_clean.index.month_name()
 
     # Draw box plots (using Seaborn)
     fig, ax = plt.subplots(1,2, figsize=(25,10))
