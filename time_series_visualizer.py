@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -5,19 +6,22 @@ from pandas.plotting import register_matplotlib_converters
 register_matplotlib_converters()
 
 # Import data (Make sure to parse dates. Consider setting index column to 'date'.)
-df = pd.read_csv('fcc-forum-pageviews.csv', index_col="date" , parse_dates=True)
+#df = pd.read_csv('fcc-forum-pageviews.csv', index_col="date" , parse_dates=True)
+df = pd.read_csv('fcc-forum-pageviews.csv')
+df["date"] = pd.to_datetime(df["date"])
+df = df.set_index('date')
 
 # Clean data
 months= ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 flt_top25= df['value'] <= df['value'].quantile(0.975)
 flt_bot25= df['value'] >= df['value'].quantile(0.025)
-df_clean = df.loc[(flt_bot25 & flt_top25 )]
 
+df_clean = df.loc[(flt_bot25 & flt_top25 )].copy()
+df_clean['value'] = df['value'].astype(np.float64)
 
 def draw_line_plot():
     # Draw line plot
     fig, ax = plt.subplots(figsize=(12,6))
-    #fig=df_clean.plot.line()
     fig=sns.lineplot(data=df_clean, legend="brief")
 
     fig.set_title('Daily freeCodeCamp Forum Page Views 5/2016-12/2019')
@@ -31,15 +35,16 @@ def draw_line_plot():
 def draw_bar_plot():
     # Copy and modify data for monthly bar plot
     df_bar= df_clean.copy()
-    df_bar.reset_index(inplace=True)
     df_bar["year"] = df_clean.index.year.values
     df_bar["month"] = df_clean.index.month_name()
     df_bar = pd.DataFrame(df_bar.groupby(["year", "month"], sort=False)["value"].mean().round().astype(int))
+    df_bar.reset_index(inplace=True)
 
     # Draw bar plot
     fig, ax = plt.subplots(figsize=(15,5))
     ax = sns.barplot(x="year", hue="month", y="value", data=df_bar, hue_order = months, errorbar=None )
     ax.set(title='Month', xlabel='Years', ylabel='Average Page Views')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90, horizontalalignment='center')
 
     # Save image and return fig (don't change this part)
     fig.savefig('bar_plot.png')
